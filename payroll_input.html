@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll Final</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body{
+    font-family:Segoe UI,sans-serif;
+    background:#eef2f7;
+    margin:0;
+}
+.header{
+    background:#1e293b;
+    color:white;
+    padding:15px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.container{
+    padding:20px;
+}
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 6px 15px rgba(0,0,0,0.1);
+}
+button{
+    border:none;
+    padding:8px 12px;
+    margin:4px;
+    border-radius:6px;
+    cursor:pointer;
+    color:white;
+}
+.btn1{background:#3b82f6;}
+.btn2{background:#10b981;}
+.btn3{background:#f59e0b;}
+.btn4{background:#ef4444;}
+.btnBack{background:#64748b;}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+th,td{
+    padding:8px;
+    border:1px solid #ddd;
+    font-size:12px;
+}
+th{
+    background:#334155;
+    color:white;
+}
+.detail-box{
+    background:#f1f5f9;
+    padding:10px;
+    border-radius:8px;
+    line-height:1.6;
+}
+.loading{
+    display:none;
+    color:#3b82f6;
+    margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h2>Payroll System</h2>
+    <button class="btnBack" onclick="goDashboard()">Back</button>
+</div>
+
+<div class="container">
+<div class="card">
+
+<input type="file" id="fileInput">
+<button class="btn1" onclick="previewFile()">Preview</button>
+<button class="btn2" onclick="saveData()">Save</button>
+<button class="btn3" onclick="replaceByPeriod()">Replace Periode</button>
+
+<p id="loading" class="loading">⏳ Processing...</p>
+
+<table>
+<thead>
+<tr>
+    <th>Periode</th>
+    <th>Nopeg</th>
+    <th>NIK</th>
+    <th>Gaji</th>
+    <th>Tunjangan</th>
+    <th>Realisasi</th>
+    <th>Masa Terakhir</th>
+    <th>Detail</th>
+    <th>Aksi</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://nwrbjbwjmkahjuuyizfq.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53cmJqYndqbWthaGp1dXlpemZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MjM4OTIsImV4cCI6MjA5MjQ5OTg5Mn0.n67pONlkoMqZguyoTwQQFJ0VBRfPaIVuVlPGxsajaGA";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let payrollData = [];
+
+function goDashboard(){
+    window.location.href = "dashboard.html";
+}
+
+function loading(show){
+    document.getElementById("loading").style.display = show ? "block" : "none";
+}
+
+function previewFile(){
+    const file = document.getElementById("fileInput").files[0];
+    if(!file){
+        alert("Pilih file Excel");
+        return;
+    }
+
+    loading(true);
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const workbook = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawData = XLSX.utils.sheet_to_json(sheet);
+
+        payrollData = rawData.map(r => ({
+            periode: r.Periode || '',
+            nopeg: r.Nopeg || '',
+            nik: r.NIK || '',
+            gaji_pokok: Number(r["Gaji Pokok"]) || 0,
+            tunjangan: Number(r.Tunjangan) || 0,
+            realisasi: Number(r["Realisasi Gaji"]) || 0,
+            masa_terakhir: r["Masa Terakhir"] || r.Periode || '',
+            bpjs4: Number(r["BPJS 4%"]) || 0,
+            bpjs1: Number(r["BPJS 1%"]) || 0,
+            jkk: Number(r.JKK) || 0,
+            jkm: Number(r.JKM) || 0,
+            jht37: Number(r["JHT 3.7%"]) || 0,
+            jht2: Number(r["JHT 2%"]) || 0,
+            jp2: Number(r["JP 2%"]) || 0,
+            jp1: Number(r["JP 1%"]) || 0,
+            potongan: Number(r.Potongan) || 0,
+            irregular: Number(r["Irregular Income"] ?? r["Irregular"] ?? 0) || 0
+        }));
+
+        renderTable(payrollData);
+        loading(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+function renderTable(data){
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    data.forEach((row,index)=>{
+        tbody.innerHTML += `
+        <tr>
+            <td>${row.periode}</td>
+            <td>${row.nopeg}</td>
+            <td>${row.nik}</td>
+            <td>${row.gaji_pokok}</td>
+            <td>${row.tunjangan}</td>
+            <td>${row.realisasi}</td>
+            <td>${row.masa_terakhir}</td>
+            <td><button onclick="toggleDetail(${index})">Detail</button></td>
+            <td><button class="btn4" onclick="deleteRow(${index})">Delete</button></td>
+        </tr>
+        <tr id="detail-${index}" style="display:none;">
+            <td colspan="9">
+                <div class="detail-box">
+                    BPJS4: ${row.bpjs4} |
+                    BPJS1: ${row.bpjs1} |
+                    JKK: ${row.jkk} |
+                    JKM: ${row.jkm}<br>
+                    JHT37: ${row.jht37} |
+                    JHT2: ${row.jht2}<br>
+                    JP2: ${row.jp2} |
+                    JP1: ${row.jp1}<br>
+                    Irregular Income: ${row.irregular}<br>
+                    Potongan: ${row.potongan}
+                </div>
+            </td>
+        </tr>`;
+    });
+}
+
+function toggleDetail(index){
+    const row = document.getElementById(`detail-${index}`);
+    row.style.display = row.style.display === "none" ? "table-row" : "none";
+}
+
+function deleteRow(index){
+    payrollData.splice(index,1);
+    renderTable(payrollData);
+}
+
+async function loadAllPayrollData(){
+    loading(true);
+
+    const { data, error } = await supabaseClient
+        .from("payroll")
+        .select("*")
+        .order("periode",{ascending:false});
+
+    loading(false);
+
+    if(error){
+        console.error(error);
+        return;
+    }
+
+    payrollData = data.map(r => ({
+        ...r,
+        irregular: Number(r.irregular) || 0
+    }));
+
+    renderTable(payrollData);
+}
+
+async function saveData(){
+    if(payrollData.length === 0){
+        alert("Tidak ada data preview");
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from("payroll")
+        .insert(payrollData);
+
+    if(error){
+        console.error(error);
+        alert("Gagal simpan");
+    }else{
+        alert("Berhasil simpan");
+        loadAllPayrollData();
+    }
+}
+
+async function replaceByPeriod(){
+    if(payrollData.length === 0){
+        alert("Tidak ada data");
+        return;
+    }
+
+    const periode = payrollData[0].periode;
+
+    await supabaseClient
+        .from("payroll")
+        .delete()
+        .eq("periode", periode);
+
+    await supabaseClient
+        .from("payroll")
+        .insert(payrollData);
+
+    alert("Replace berhasil");
+    loadAllPayrollData();
+}
+
+window.onload = loadAllPayrollData;
+</script>
+
+</body>
+</html>
