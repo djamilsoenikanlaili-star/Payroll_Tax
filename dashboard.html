@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll System Dashboard</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Californian FB,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+    min-height:100vh;
+}
+
+/* HEADER */
+.header{
+    background:#1f2d3d;
+    color:white;
+    padding:20px 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.header h1{
+    font-size:28px;
+}
+
+.logout-btn{
+    padding:10px 16px;
+    border:none;
+    border-radius:5px;
+    background:#e74c3c;
+    color:white;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.logout-btn:hover{
+    background:#c0392b;
+}
+
+/* CONTENT */
+.container{
+    padding:30px;
+}
+
+.dashboard-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+/* CARD */
+.card{
+    background:white;
+    border-radius:8px;
+    padding:25px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    cursor:pointer;
+    transition:0.3s;
+    border-top:4px solid #2c3e50;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 4px 12px rgba(0,0,0,0.12);
+}
+
+.icon{
+    font-size:32px;
+    margin-bottom:10px;
+}
+
+.card h2{
+    font-size:18px;
+    margin-bottom:8px;
+    color:#2c3e50;
+}
+
+.card p{
+    font-size:14px;
+    color:#666;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Payroll System</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+    <div class="dashboard-grid">
+
+        <div class="card" onclick="openMenu('master')">
+            <div class="icon">👥</div>
+            <h2>Master Database Pajak</h2>
+            <p>Kelola Database Pajak karyawan</p>
+        </div>
+
+        <div class="card" onclick="openMenu('payroll')">
+            <div class="icon">💰</div>
+            <h2>Payroll Input</h2>
+            <p>Input Komponen Gaji</p>
+        </div>
+
+        <div class="card" onclick="openMenu('tax')">
+            <div class="icon">🧾</div>
+            <h2>Tax Engine</h2>
+            <p>Hitung PPh21</p>
+        </div>
+
+        <div class="card" onclick="openMenu('report')">
+            <div class="icon">📊</div>
+            <h2>Report</h2>
+            <p>Laporan payroll</p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function logout(){
+    window.location.href = "index.html";
+}
+
+function openMenu(menu){
+    switch(menu){
+        case "master":
+            window.location.href = "master_payroll.html";
+            break;
+        case "payroll":
+           window.location.href = "payroll_input.html";
+            break;
+        case "tax":
+            window.location.href = "tax_engine.html";
+            break;
+        case "report":
+            window.location.href = "report.html";
+            break;
+        default:
+            alert("Menu tidak ditemukan");
+    }
+}
+</script>
+
+</body>
+</html>
