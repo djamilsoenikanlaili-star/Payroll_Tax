@@ -1,103 +1,39 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login Payroll</title>
-
-<style>
-body{
-    font-family:Segoe UI;
-    background:#1f2d3d;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
-
-.box{
-    background:white;
-    padding:30px;
-    border-radius:10px;
-    width:300px;
-    text-align:center;
-}
-
-input{
-    width:100%;
-    padding:10px;
-    margin:10px 0;
-}
-
-button{
-    width:100%;
-    padding:10px;
-    background:#3498db;
-    color:white;
-    border:none;
-    cursor:pointer;
-}
-
-#message{
-    margin-top:10px;
-    font-size:13px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="box">
-    <h2>Login</h2>
-
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-
-    <button onclick="login()">Login</button>
-
-    <div id="message"></div>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <script>
-async function login() {
+const SUPABASE_URL = "https://crrebdiiwhcxnawppdyh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycmViZGlpd2hjeG5hd3BwZHloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNTA5NzcsImV4cCI6MjA5MjkyNjk3N30.uk9RtagnitOFY9NvsGulkIgsOoSXaiCcNxtXrjljp3A";
 
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function login(){
+
+    const username = document.getElementById("username").value.trim().toLowerCase();
+    const password = document.getElementById("password").value.trim().toLowerCase();
     const message = document.getElementById("message");
 
-    message.innerText = "⏳ Authenticating...";
+    message.innerText = "⏳ Checking...";
 
-    const url = "https://script.google.com/macros/s/AKfycbzMpU0-CJvLHWONO3ya_5qJZu3m4ApNrONm8BReydHVXEP40kiQg0ffI5jcBBXgjd8Q/exec"
-        + "?action=login"
-        + "&username=" + encodeURIComponent(username)
-        + "&password=" + encodeURIComponent(password);
+    const { data, error } = await db
+        .from("users")
+        .select("*")
+        .eq("username", username)
+        .eq("password", password)
+        .single();
 
-    try {
-        const response = await fetch(url);
-        const result = await response.json();
-
-        if (result.success === true) {
-
-            // ✅ SESSION
-            localStorage.setItem("isLogin", "true");
-            localStorage.setItem("userData", JSON.stringify(result.user));
-
-            message.innerText = "Login berhasil...";
-
-            setTimeout(()=>{
-                window.location.href = "dashboard.html";
-            },500);
-
-        } else {
-            message.innerText = result.message;
-        }
-
-    } catch (err) {
-        console.error(err);
-        message.innerText = "Server error";
+    if(error || !data){
+        message.innerText = "Username / Password salah";
+        return;
     }
+
+    // ✅ SESSION
+    localStorage.setItem("isLogin","true");
+    localStorage.setItem("userData", JSON.stringify(data));
+
+    message.innerText = "Login berhasil";
+
+    setTimeout(()=>{
+        window.location.href = "dashboard.html";
+    },500);
 }
 </script>
-
-</body>
-</html>
