@@ -1,39 +1,46 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 const SUPABASE_URL = "https://crrebdiiwhcxnawppdyh.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycmViZGlpd2hjeG5hd3BwZHloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNTA5NzcsImV4cCI6MjA5MjkyNjk3N30.uk9RtagnitOFY9NvsGulkIgsOoSXaiCcNxtXrjljp3A";
 
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function login(){
 
-    const username = document.getElementById("username").value.trim().toLowerCase();
-    const password = document.getElementById("password").value.trim().toLowerCase();
-    const message = document.getElementById("message");
+    try{
 
-    message.innerText = "⏳ Checking...";
+        const username = document.getElementById("username").value.trim().toLowerCase();
+        const password = document.getElementById("password").value.trim().toLowerCase();
+        const message = document.getElementById("message");
 
-    const { data, error } = await db
-        .from("users")
-        .select("*")
-        .eq("username", username)
-        .eq("password", password)
-        .single();
+        message.innerText = "⏳ Checking...";
 
-    if(error || !data){
-        message.innerText = "Username / Password salah";
-        return;
+        const { data, error } = await db
+            .from("users")
+            .select("*")
+            .eq("username", username)
+            .eq("password", password)
+            .single();
+
+        if(error || !data){
+            message.innerText = "Username / Password salah";
+            return;
+        }
+
+        // ✅ SESSION
+        localStorage.setItem("isLogin","true");
+        localStorage.setItem("userData", JSON.stringify(data));
+
+        message.innerText = "Login berhasil";
+
+        setTimeout(()=>{
+            window.location.href = "dashboard.html";
+        },500);
+
+    }catch(err){
+        console.error("LOGIN ERROR:", err);
+        alert("Script error: " + err.message);
     }
-
-    // ✅ SESSION
-    localStorage.setItem("isLogin","true");
-    localStorage.setItem("userData", JSON.stringify(data));
-
-    message.innerText = "Login berhasil";
-
-    setTimeout(()=>{
-        window.location.href = "dashboard.html";
-    },500);
 }
 </script>
