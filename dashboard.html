@@ -32,6 +32,13 @@ body{
     font-size:26px;
 }
 
+/* USER INFO */
+.user-info{
+    margin-right:15px;
+    font-size:14px;
+    opacity:0.9;
+}
+
 .logout-btn{
     padding:10px 16px;
     border:none;
@@ -88,9 +95,20 @@ body{
 
 <body>
 
+<!-- 🔐 PROTEKSI LOGIN -->
+<script>
+if (localStorage.getItem("isLogin") !== "true") {
+    window.location.href = "index.html";
+}
+</script>
+
 <div class="header">
     <h1>Payroll System</h1>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <div style="display:flex;align-items:center;">
+        <div class="user-info" id="userInfo"></div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 </div>
 
 <div class="container">
@@ -114,7 +132,6 @@ body{
             <p>Perhitungan PPh21</p>
         </div>
 
-        <!-- 🔥 REPORT TERHUBUNG -->
         <div class="card" onclick="go('report.html')">
             <div class="icon">📊</div>
             <h2>Report</h2>
@@ -125,10 +142,17 @@ body{
 </div>
 
 <script>
+// ✅ TAMPILKAN USER LOGIN
+const username = localStorage.getItem("username") || "User";
+document.getElementById("userInfo").innerText = "👤 " + username;
+
+// ✅ LOGOUT BERSIH
 function logout(){
+    localStorage.clear();
     window.location.href = "index.html";
 }
 
+// NAVIGASI
 function go(page){
     window.location.href = page;
 }
