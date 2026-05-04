@@ -1,1 +1,270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tax Engine</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{margin:0;font-family:Segoe UI;background:#f4f6f9;}
+.header{background:#243447;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;}
+.btn{padding:10px 15px;border:none;border-radius:6px;cursor:pointer;color:white;}
+.blue{background:#3b82f6;} .green{background:#10b981;} .gray{background:#64748b;}
+.container{padding:20px;}
+select{padding:8px;margin-right:10px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
+th,td{padding:8px;border:1px solid #ddd;font-size:12px;}
+th{background:#1e293b;color:white;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>Tax Engine</h2>
+    <button class="btn gray" onclick="goBack()">Back</button>
+</div>
+
+<div class="container">
+<select id="bulan"></select>
+<select id="tahun"></select>
+
+<button class="btn blue" onclick="generateTax()">Generate</button>
+<button class="btn green" onclick="saveTax()">Save</button>
+
+<table id="table">
+<thead>
+<tr>
+<th>NIK</th><th>Nama</th><th>Project</th>
+<th>Gapok</th><th>Tunjangan</th><th>Premi</th><th>Irregular</th>
+<th>Bruto</th><th>Akumulasi Bruto</th><th>Biaya Jabatan</th>
+<th>JHT</th><th>Neto</th><th>PTKP</th><th>PKP</th>
+<th>PPH TER</th><th>PPH FINAL</th><th>Selisih</th><th>Keterangan</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+    
+
+<script>
+
+// ================= SUPABASE =================
+const supabaseClient = supabase.createClient(
+"https://crrebdiiwhcxnawppdyh.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycmViZGlpd2hjeG5hd3BwZHloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNTA5NzcsImV4cCI6MjA5MjkyNjk3N30.uk9RtagnitOFY9NvsGulkIgsOoSXaiCcNxtXrjljp3A"
+);
+
+// ================= HELPER =================
+function goBack(){ 
+   window.location.href = "/Payroll_Tax_Calculation/dashboard.html";
+}
+
+function normalizeStatus(s){
+    return (s||"TK/0").toUpperCase().replace(/\s/g,'');
+}
+
+function getTERCategory(status){
+    if(["TK/0","TK/1","K/0"].includes(status)) return "A";
+    if(["TK/2","TK/3","K/1"].includes(status)) return "B";
+    return "C";
+}
+
+// ================= PTKP =================
+const PTKP_MAP={
+"TK/0":54000000,"TK/1":58500000,"TK/2":63000000,"TK/3":67500000,
+"K/0":58500000,"K/1":63000000,"K/2":67500000,"K/3":72000000
+};
+
+// ================= TER =================
+const TER_TABLE={
+A:[[0,5400000,0],[5400001,5650000,0.0025],[5650001,5950000,0.005],[5950001,6300000,0.0075],[6300001,6750000,0.01],[6750001,7500000,0.0125],[7500001,8550000,0.015],[8550001,9650000,0.0175],[9650001,10050000,0.02],[10050001,10350000,0.0225],[10350001,10700000,0.025],[10700001,11050000,0.03],[11050001,11600000,0.035],[11600001,12500000,0.04],[12500001,13750000,0.05],[13750001,15100000,0.06],[15100001,16950000,0.07],[16950001,19750000,0.08],[19750001,24150000,0.09],[24150001,26450000,0.10],[26450001,28000000,0.11],[28000001,30000000,0.12],[30000001,Infinity,0.13]],
+B:[[0,6200000,0],[6200001,6500000,0.0025],[6500001,6850000,0.005],[6850001,7300000,0.0075],[7300001,9200000,0.01],[9200001,10750000,0.015],[10750001,11250000,0.02],[11250001,11600000,0.025],[11600001,12600000,0.03],[12600001,13600000,0.04],[13600001,14950000,0.05],[14950001,16400000,0.06],[16400001,18450000,0.07],[18450001,21850000,0.08],[21850001,26000000,0.09],[26000001,27700000,0.10],[27700001,29350000,0.11],[29350001,30000000,0.12],[30000001,Infinity,0.13]],
+C:[[0,6600000,0],[6600001,6950000,0.0025],[6950001,7350000,0.005],[7350001,7800000,0.0075],[7800001,8850000,0.01],[8850001,9800000,0.0125],[9800001,10950000,0.015],[10950001,11200000,0.0175],[11200001,12050000,0.02],[12050001,12950000,0.03],[12950001,14150000,0.04],[14150001,15550000,0.05],[15550001,17050000,0.06],[17050001,19500000,0.07],[19500001,22700000,0.08],[22700001,26600000,0.09],[26600001,28100000,0.10],[28100001,30000000,0.11],[30000001,Infinity,0.12]]
+};
+
+function getTER(bruto,status){
+    let table=TER_TABLE[getTERCategory(status)];
+    for(let r of table){
+        if(bruto>=r[0] && bruto<=r[1]) return bruto*r[2];
+    }
+    return 0;
+}
+
+// ================= CALC =================
+function biayaJabatan(bruto){
+    return Math.min(bruto*0.05,500000);
+}
+
+function pphProgresif(pkp){
+if(pkp<=0) return 0;
+if(pkp<=60000000) return pkp*0.05;
+if(pkp<=250000000) return 60000000*0.05+(pkp-60000000)*0.15;
+return 60000000*0.05+190000000*0.15+(pkp-250000000)*0.25;
+}
+
+// ================= LOAD =================
+function loadFilter(){
+for(let i=1;i<=12;i++){
+let b=i.toString().padStart(2,"0");
+bulan.innerHTML+=`<option value="${b}">${b}</option>`;
+}
+for(let y=2023;y<=2030;y++){
+tahun.innerHTML+=`<option value="${y}">${y}</option>`;
+}
+}
+
+// ================= GENERATE =================
+async function generateTax(){
+
+const bulan = document.getElementById("bulan").value;
+const tahun = document.getElementById("tahun").value;
+
+if(!bulan||!tahun) return alert("Pilih periode");
+
+const periode = `${tahun}-${bulan}`;
+
+const {data:payroll=[]}=await supabaseClient
+.from("payroll")
+.select("*")
+.lte("periode", periode)
+.order("periode", { ascending: true });
+
+const {data:master=[]}=await supabaseClient
+.from("master_payroll").select("*");
+
+let hasil=[];
+let akumulasiMap = {}; // 🔥 kunci fix
+let akumulasiNetoMap = {};    
+
+payroll.forEach(r=>{
+
+let m=master.find(x=>x.nik===r.nik)||{};
+
+let gapok=+r.gaji_pokok||0;
+let tunjangan=+r.tunjangan||0;
+let premi=(+r.jkk||0)+(+r.jkm||0)+(+r.bpjs4||0);
+let irregular=+r.irregular||0;
+
+let bruto=gapok+tunjangan+premi+irregular;
+
+// 🔥 AKUMULASI PER NIK
+if(!akumulasiMap[r.nik]) akumulasiMap[r.nik]=0;
+akumulasiMap[r.nik] += bruto;
+
+let akumbruto = akumulasiMap[r.nik]; // ✅ ini yang benar
+
+let jht=(+r.jp1||0)+(+r.jp2||0);
+
+let bj=biayaJabatan(bruto);
+let neto = bruto - bj - jht;
+
+// 🔥 akumulasi neto
+if(!akumulasiNetoMap[r.nik]) akumulasiNetoMap[r.nik]=0;
+akumulasiNetoMap[r.nik] += neto;
+
+let akumNeto = akumulasiNetoMap[r.nik];
+
+let status=normalizeStatus(m.status_pajak);
+let ptkp=PTKP_MAP[status]||54000000;
+
+let pkp = Math.max(0, akumNeto - ptkp);
+
+let ter=getTER(bruto,status);
+let final=pphProgresif(pkp);
+
+// 🔥 hanya push periode terpilih
+if(r.periode === periode){
+
+hasil.push({
+periode,
+nik:r.nik,
+nama:m.nama,
+project:m.project,
+gapok,tunjangan,premi,irregular,
+bruto,
+akumbruto, // ✅ sudah akumulasi
+biaya_jabatan:bj,
+iuran_pensiun:jht,
+neto,
+ptkp,
+pkp,
+pph_ter:ter,
+pph21_final:final,
+selisih:final-ter,
+keterangan:(final-ter)>0?"Kurang":"Lebih"
+});
+
+}
+
+});
+
+// 🔥 setelah loop
+localStorage.setItem("taxData",JSON.stringify(hasil));
+render(hasil);
+
+}
+
+// ================= RENDER =================
+function render(data){
+let tbody=document.querySelector("tbody");
+tbody.innerHTML="";
+data.forEach(d=>{
+tbody.innerHTML+=`
+<tr>
+<td>${d.nik}</td>
+<td>${d.nama||""}</td>
+<td>${d.project||""}</td>
+<td>${d.gapok}</td>
+<td>${d.tunjangan}</td>
+<td>${d.premi}</td>
+<td>${d.irregular}</td>
+<td>${d.bruto}</td>
+<td>${d.akumbruto}</td>
+<td>${d.biaya_jabatan}</td>
+<td>${d.iuran_pensiun}</td>
+<td>${d.neto}</td>
+<td>${d.ptkp}</td>
+<td>${d.pkp}</td>
+<td>${d.pph_ter}</td>
+<td>${d.pph21_final}</td>
+<td>${d.selisih}</td>
+<td>${d.keterangan}</td>
+</tr>`;
+});
+}
+
+// ================= SAVE =================
+async function saveTax(){
+
+let data = JSON.parse(localStorage.getItem("taxData")||"[]");
+if(!data.length) return alert("Generate dulu");
+
+let periode = data[0].periode;
+
+await supabaseClient
+.from("tax_engine")
+.delete()
+.eq("periode", periode);
+
+const { error } = await supabaseClient
+.from("tax_engine")
+.insert(data);
+
+if(error){
+    alert("Gagal: " + error.message);
+}else{
+    alert("Berhasil save (replace)");
+}
+}
+
+// ================= INIT =================
+document.addEventListener("DOMContentLoaded",()=>{
+loadFilter();
+let saved=localStorage.getItem("taxData");
+if(saved) render(JSON.parse(saved));
+});
+
+</script>
