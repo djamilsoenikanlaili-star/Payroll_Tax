@@ -32,13 +32,6 @@ body{
     font-size:26px;
 }
 
-/* USER INFO */
-.user-info{
-    margin-right:15px;
-    font-size:14px;
-    opacity:0.9;
-}
-
 .logout-btn{
     padding:10px 16px;
     border:none;
@@ -95,20 +88,9 @@ body{
 
 <body>
 
-<!-- 🔐 PROTEKSI LOGIN -->
-<script>
-if (localStorage.getItem("isLogin") !== "true") {
-    window.location.href = "index.html";
-}
-</script>
-
 <div class="header">
     <h1>Payroll System</h1>
-
-    <div style="display:flex;align-items:center;">
-        <div class="user-info" id="userInfo"></div>
-        <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
 </div>
 
 <div class="container">
@@ -142,11 +124,20 @@ if (localStorage.getItem("isLogin") !== "true") {
 </div>
 
 <script>
-// ✅ TAMPILKAN USER LOGIN
-const username = localStorage.getItem("username") || "User";
-document.getElementById("userInfo").innerText = "👤 " + username;
+// 🔐 PROTEKSI LOGIN (AMAN & TIDAK MERUSAK RENDER)
+window.addEventListener("DOMContentLoaded", function(){
 
-// ✅ LOGOUT BERSIH
+    const isLogin = localStorage.getItem("isLogin");
+
+    // kalau belum login → balik ke login
+    if(isLogin !== "true"){
+        window.location.href = "index.html";
+        return;
+    }
+
+});
+
+// 🚪 LOGOUT BENAR
 function logout(){
     localStorage.clear();
     window.location.href = "index.html";
