@@ -252,16 +252,19 @@ function previewFile(){
         const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
         uploadData = json.map(r=>({
-            nopeg:r.Nopeg||'',
-            nik:r.NIK||'',
-            npwp:r.NPWP||'',
-            nama:r.Nama||'',
-            jenis_kelamin:r["Jenis Kelamin"]||'',
-            alamat:r.Alamat||'',
-            status_pajak:r["Status Pajak"]||'',
-            tmt: fixDate(row.TMT),
-            project:r.Project||''
-        }));
+    nopeg:r.Nopeg||'',
+    nik:r.NIK||'',
+    npwp:r.NPWP||'',
+    nama:r.Nama||'',
+    jenis_kelamin:r["Jenis Kelamin"]||'',
+    alamat:r.Alamat||'',
+    status_pajak:r["Status Pajak"]||'',
+
+    // ✅ FIX DI SINI
+    tmt: fixDate(r.TMT),
+
+    project:r.Project||''
+}));
 
         filteredData = uploadData;
         currentPage=1;
