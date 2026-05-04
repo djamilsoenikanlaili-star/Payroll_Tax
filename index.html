@@ -1,3 +1,4 @@
+<script>
 async function login() {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
@@ -6,10 +7,11 @@ async function login() {
     message.style.color = "black";
     message.innerHTML = "⏳ Authenticating...";
 
+    // ✅ URL FIX
     const url = "https://script.google.com/macros/s/AKfycbzMpU0-CJvLHWONO3ya_5qJZu3m4ApNrONm8BReydHVXEP40kiQg0ffI5jcBBXgjd8Q/exec"
-        + encodeURIComponent(username)
-        + "&password="
-        + encodeURIComponent(password);
+        + "?action=login"
+        + "&username=" + encodeURIComponent(username)
+        + "&password=" + encodeURIComponent(password);
 
     try {
         const response = await fetch(url);
@@ -40,3 +42,4 @@ async function login() {
         message.innerText = "Gagal terhubung ke server";
     }
 }
+</script>
