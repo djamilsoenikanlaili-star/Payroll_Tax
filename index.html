@@ -1,8 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Payroll</title>
+
+<!-- Supabase (browser-ready) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Segoe UI,sans-serif;}
+body{
+    margin:0;
+    background:#1f2d3d;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.box{
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    width:320px;
+    text-align:center;
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+h2{margin-bottom:20px;}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:8px 0;
+    border:1px solid #ddd;
+    border-radius:6px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    background:#3498db;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+#message{
+    margin-top:10px;
+    font-size:13px;
+    min-height:18px;
+}
+</style>
+</head>
+
 <body>
 
-<h1 style="color:red">TEST BERHASIL</h1>
+<div class="box">
+    <h2>Login</h2>
+
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+
+    <button onclick="login()">Login</button>
+
+    <div id="message"></div>
+</div>
+
+<script>
+// ================= CONFIG =================
+const SUPABASE_URL = "https://crrebdiiwhcxnawppdyh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycmViZGlpd2hjeG5hd3BwZHloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNTA5NzcsImV4cCI6MjA5MjkyNjk3N30.uk9RtagnitOFY9NvsGulkIgsOoSXaiCcNxtXrjljp3A";
+
+// pastikan library kebaca
+if(!window.supabase){
+    alert("Supabase gagal load (cek internet / CDN)");
+}
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ================= AUTO REDIRECT =================
+if(localStorage.getItem("isLogin") === "true"){
+    window.location.href = "dashboard.html";
+}
+
+// ================= LOGIN =================
+async function login(){
+
+    const username = document.getElementById("username").value.trim().toLowerCase();
+    const password = document.getElementById("password").value.trim().toLowerCase();
+    const message = document.getElementById("message");
+
+    if(!username || !password){
+        message.innerText = "Isi username & password";
+        return;
+    }
+
+    message.innerText = "⏳ Checking...";
+
+    try{
+
+        const { data, error } = await db
+            .from("users")
+            .select("*")
+            .eq("username", username)
+            .eq("password", password)
+            .single();
+
+        if(error || !data){
+            console.error(error);
+            message.innerText = "Username / Password salah";
+            return;
+        }
+
+        // ✅ SESSION
+        localStorage.setItem("isLogin","true");
+        localStorage.setItem("userData", JSON.stringify(data));
+
+        message.innerText = "Login berhasil";
+
+        setTimeout(()=>{
+            window.location.href = "dashboard.html";
+        },500);
+
+    }catch(err){
+        console.error(err);
+        message.innerText = "Error koneksi";
+    }
+}
+</script>
 
 </body>
 </html>
