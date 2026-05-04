@@ -3,85 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Payroll System Dashboard</title>
+<title>Payroll Dashboard</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Segoe UI,sans-serif;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif;}
 
-body{
-    background:#f4f6f9;
-    min-height:100vh;
-}
+body{background:#f4f6f9;}
 
-/* HEADER */
 .header{
     background:#1f2d3d;
     color:white;
-    padding:20px 30px;
+    padding:18px 30px;
     display:flex;
     justify-content:space-between;
     align-items:center;
 }
 
-.header h1{
-    font-size:26px;
+.header-left{
+    display:flex;
+    flex-direction:column;
+}
+
+.header h1{font-size:22px;}
+.user{
+    font-size:13px;
+    opacity:0.8;
 }
 
 .logout-btn{
-    padding:10px 16px;
+    padding:8px 14px;
     border:none;
     border-radius:5px;
     background:#e74c3c;
     color:white;
     cursor:pointer;
-    font-weight:bold;
 }
-.logout-btn:hover{ background:#c0392b; }
 
-/* CONTENT */
-.container{ padding:30px; }
+.container{padding:25px;}
 
-.dashboard-grid{
+.grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
     gap:20px;
 }
 
-/* CARD */
 .card{
     background:white;
     border-radius:10px;
-    padding:25px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    padding:20px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
     cursor:pointer;
-    transition:0.25s;
+    transition:0.2s;
     border-top:4px solid #2c3e50;
 }
 
 .card:hover{
-    transform:translateY(-4px);
-    box-shadow:0 6px 16px rgba(0,0,0,0.15);
+    transform:translateY(-5px);
+    box-shadow:0 6px 18px rgba(0,0,0,0.15);
 }
 
 .icon{
-    font-size:32px;
+    font-size:28px;
     margin-bottom:10px;
 }
 
-.card h2{
-    font-size:18px;
-    margin-bottom:6px;
+.title{
+    font-weight:600;
+    margin-bottom:5px;
     color:#2c3e50;
 }
 
-.card p{
+.desc{
     font-size:13px;
     color:#666;
+}
+
+/* role badge */
+.badge{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:11px;
+    background:#3498db;
+    color:white;
+    margin-left:6px;
 }
 </style>
 </head>
@@ -89,61 +94,70 @@ body{
 <body>
 
 <div class="header">
-    <h1>Payroll System</h1>
+    <div class="header-left">
+        <h1>Payroll System</h1>
+        <div class="user" id="userInfo"></div>
+    </div>
+
     <button class="logout-btn" onclick="logout()">Logout</button>
 </div>
 
 <div class="container">
-    <div class="dashboard-grid">
+    <div class="grid">
 
         <div class="card" onclick="go('master_payroll.html')">
             <div class="icon">👥</div>
-            <h2>Master Database Pajak</h2>
-            <p>Kelola database pajak karyawan</p>
+            <div class="title">Master Database Pajak</div>
+            <div class="desc">Kelola data karyawan</div>
         </div>
 
         <div class="card" onclick="go('payroll_input.html')">
             <div class="icon">💰</div>
-            <h2>Payroll Input</h2>
-            <p>Input komponen gaji</p>
+            <div class="title">Payroll Input</div>
+            <div class="desc">Input komponen gaji</div>
         </div>
 
         <div class="card" onclick="go('tax_engine.html')">
             <div class="icon">🧾</div>
-            <h2>Tax Engine</h2>
-            <p>Perhitungan PPh21</p>
+            <div class="title">Tax Engine</div>
+            <div class="desc">Perhitungan PPh21</div>
         </div>
 
         <div class="card" onclick="go('report.html')">
             <div class="icon">📊</div>
-            <h2>Report</h2>
-            <p>Laporan PPh21 & Master Payroll</p>
+            <div class="title">Report</div>
+            <div class="desc">Laporan payroll & pajak</div>
         </div>
 
     </div>
 </div>
 
 <script>
-// 🔐 PROTEKSI LOGIN (AMAN & TIDAK MERUSAK RENDER)
 window.addEventListener("DOMContentLoaded", function(){
 
     const isLogin = localStorage.getItem("isLogin");
-
-    // kalau belum login → balik ke login
     if(isLogin !== "true"){
         window.location.href = "index.html";
         return;
     }
 
+    const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+
+    const username = userData.username || "User";
+    const role = userData.role || "user";
+
+    document.getElementById("userInfo").innerHTML =
+        "👤 " + username + ' <span class="badge">'+role+'</span>';
+
 });
 
-// 🚪 LOGOUT BENAR
+// logout
 function logout(){
     localStorage.clear();
     window.location.href = "index.html";
 }
 
-// NAVIGASI
+// navigation
 function go(page){
     window.location.href = page;
 }
