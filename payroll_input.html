@@ -91,45 +91,35 @@ function validateRow(r,i){
 
 // ================= PREVIEW =================
 function previewFile(){
-    const file=document.getElementById("fileInput").files[0];
+    const file = document.getElementById("fileInput").files[0];
     if(!file) return alert("Pilih file");
 
-    loading(true);
+    const reader = new FileReader();
 
-    const reader=new FileReader();
-    reader.onload=e=>{
-        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
-        const sheet=wb.Sheets[wb.SheetNames[0]];
-        const raw=XLSX.utils.sheet_to_json(sheet);
+    reader.onload = e=>{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
 
-        let errors=[];
-        payrollData=[];
+        const raw = XLSX.utils.sheet_to_json(sheet, {header:1});
 
-        raw.forEach((r,i)=>{
-            const err=validateRow(r,i);
-            if(err.length){
-                errors.push(`Row ${i+2}: ${err.join(", ")}`);
-                return;
-            }
+        console.log("RAW:", raw);
 
-            payrollData.push({
-                periode:r.Periode,
-                nopeg:r.Nopeg,
-                nik:r.NIK,
-                nama:r.Nama,
-                gaji_pokok:Number(r["Gaji Pokok"])||0,
-                tunjangan:Number(r.Tunjangan)||0,
-                masa_terakhir:r["Masa Terakhir"]||r.Periode,
-                potongan:Number(r.Potongan)||0
-            });
-        });
-
-        loading(false);
-
-        if(errors.length){
-            alert("ERROR:\n"+errors.slice(0,10).join("\n"));
+        if(raw.length <= 1){
+            alert("File kosong / header tidak terbaca");
             return;
         }
+
+        const rows = raw.slice(1);
+
+        payrollData = rows.map(r=>({
+            periode: r[0],
+            nopeg: r[1],
+            nik: r[2],
+            gaji_pokok: Number(r[3]) || 0,
+            tunjangan: Number(r[4]) || 0,
+            masa_terakhir: r[5],
+            potongan: Number(r[6]) || 0
+        }));
 
         renderTable();
     };
