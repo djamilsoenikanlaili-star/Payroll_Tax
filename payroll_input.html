@@ -1,1 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll Input</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Segoe UI;background:#eef2f7;margin:0;}
+.header{background:#1e293b;color:white;padding:15px 20px;display:flex;justify-content:space-between;}
+.container{padding:20px;}
+.card{background:white;padding:20px;border-radius:12px;box-shadow:0 6px 15px rgba(0,0,0,0.1);}
+button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cursor:pointer;}
+.btn1{background:#3b82f6;}
+.btn2{background:#10b981;}
+.btn3{background:#f59e0b;}
+.btn4{background:#ef4444;}
+.btnBack{background:#64748b;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{padding:8px;border:1px solid #ddd;font-size:12px;}
+th{background:#334155;color:white;}
+.loading{display:none;color:#3b82f6;}
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 PROTEKSI LOGIN -->
+<script>
+if(localStorage.getItem("isLogin") !== "true"){
+    window.location.href="index.html";
+}
+</script>
+
+<div class="header">
+    <h2>Payroll Input</h2>
+    <button class="btnBack" onclick="goDashboard()">Dashboard</button>
+</div>
+
+<div class="container">
+<div class="card">
+
+<input type="file" id="fileInput">
+<button class="btn1" onclick="previewFile()">Preview</button>
+<button class="btn2" onclick="saveData()">Save</button>
+<button class="btn3" onclick="replaceByPeriod()">Replace Periode</button>
+
+<p id="loading" class="loading">⏳ Processing...</p>
+
+<table>
+<thead>
+<tr>
+<th>Periode</th><th>Nopeg</th><th>NIK</th>
+<th>Gaji</th><th>Tunjangan</th><th>Masa</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+</div>
+</div>
+
+<script>
+const db = window.supabase.createClient(
+"https://crrebdiiwhcxnawppdyh.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycmViZGlpd2hjeG5hd3BwZHloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNTA5NzcsImV4cCI6MjA5MjkyNjk3N30.uk9RtagnitOFY9NvsGulkIgsOoSXaiCcNxtXrjljp3A"
+);
+
+let payrollData=[];
+
+function goDashboard(){
+    window.location.href="dashboard.html";
+}
+
+function loading(x){
+    document.getElementById("loading").style.display = x?"block":"none";
+}
+
+// ================= VALIDASI =================
+function validateRow(r,i){
+    let err=[];
+    if(!r.Periode) err.push("Periode kosong");
+    if(!r.NIK) err.push("NIK kosong");
+    if(!r.Nama) err.push("Nama kosong");
+    return err;
+}
+
+// ================= PREVIEW =================
+function previewFile(){
+    const file=document.getElementById("fileInput").files[0];
+    if(!file) return alert("Pilih file");
+
+    loading(true);
+
+    const reader=new FileReader();
+    reader.onload=e=>{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        const sheet=wb.Sheets[wb.SheetNames[0]];
+        const raw=XLSX.utils.sheet_to_json(sheet);
+
+        let errors=[];
+        payrollData=[];
+
+        raw.forEach((r,i)=>{
+            const err=validateRow(r,i);
+            if(err.length){
+                errors.push(`Row ${i+2}: ${err.join(", ")}`);
+                return;
+            }
+
+            payrollData.push({
+                periode:r.Periode,
+                nopeg:r.Nopeg,
+                nik:r.NIK,
+                nama:r.Nama,
+                gaji_pokok:Number(r["Gaji Pokok"])||0,
+                tunjangan:Number(r.Tunjangan)||0,
+                masa_terakhir:r["Masa Terakhir"]||r.Periode,
+                potongan:Number(r.Potongan)||0
+            });
+        });
+
+        loading(false);
+
+        if(errors.length){
+            alert("ERROR:\n"+errors.slice(0,10).join("\n"));
+            return;
+        }
+
+        renderTable();
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+// ================= RENDER =================
+function renderTable(){
+    const tbody=document.getElementById("tbody");
+    tbody.innerHTML="";
+
+    payrollData.forEach((r,i)=>{
+        tbody.innerHTML+=`
+        <tr>
+            <td>${r.periode}</td>
+            <td>${r.nopeg}</td>
+            <td>${r.nik}</td>
+            <td>${r.gaji_pokok}</td>
+            <td>${r.tunjangan}</td>
+            <td>${r.masa_terakhir}</td>
+            <td><button class="btn4" onclick="deleteRow(${i})">Delete</button></td>
+        </tr>`;
+    });
+}
+
+function deleteRow(i){
+    payrollData.splice(i,1);
+    renderTable();
+}
+
+// ================= SAVE =================
+async function saveData(){
+    if(!payrollData.length) return alert("Tidak ada data");
+
+    loading(true);
+
+    const {error}=await db.from("payroll").insert(payrollData);
+
+    loading(false);
+
+    if(error){
+        console.error(error);
+        alert("Error: "+error.message);
+        return;
+    }
+
+    alert("Berhasil simpan");
+}
+
+// ================= REPLACE =================
+async function replaceByPeriod(){
+    if(!payrollData.length) return;
+
+    const periode=payrollData[0].periode;
+
+    if(!confirm("Replace periode "+periode+" ?")) return;
+
+    loading(true);
+
+    await db.from("payroll").delete().eq("periode",periode);
+    await db.from("payroll").insert(payrollData);
+
+    loading(false);
+
+    alert("Replace selesai");
+}
+
+</script>
+
+</body>
+</html>
